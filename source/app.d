@@ -77,6 +77,7 @@ void main() {
     import std.conv : to;
 
     auto group = htmlEscape(req.form["grp"]);
+
     auto show = (db.groupExists(group) ? "" : htmlEscape("<NEW GROUP>")) ~ "# <b>" ~ group ~ "</b>";
     auto user = req.session.get!string("user");
 
