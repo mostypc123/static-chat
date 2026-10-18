@@ -1,3 +1,5 @@
+module config;
+
 class Config {
   import vibe.vibe;
 

@@ -2,11 +2,13 @@ import vibe.vibe;
 import utils;
 import config;
 import database;
+import themes;
 
 void main() {
   auto config = new Config;
   auto router = new URLRouter;
   auto db = new Database(config);
+  utils.db = db;
 
   auto settings = new HTTPServerSettings;
   settings.port = 8080;
@@ -32,7 +34,7 @@ void main() {
 
         <hr>
         <small>Cookies: We simply use a session cookie, otherwise theres not any other one.</small>
-      `)
+      `, req.session ? req.session.get!string("user") : null)
     );
   });
 
@@ -49,7 +51,7 @@ void main() {
       res.writeHtmlBody(
         html(`
           <p>Failed to register / login. <a href="/">Try again</a>.</p>
-        `)
+        `, req.session ? req.session.get!string("user") : null)
       );
     }
   });
@@ -66,10 +68,10 @@ void main() {
       html(`
         <h1>Welcome to Static Chat, <small>` ~ htmlEscape(user) ~ `</small>!</h1>
         <form action="/chat/view" method="POST">
-          # <input name="grp" placeholder="group name">
+          # <input autofocus name="grp" placeholder="group name">
           <button type="submit">Continue</button>
         </form>
-      `)
+      `, req.session ? req.session.get!string("user") : null)
     );
   });
 
@@ -101,7 +103,7 @@ void main() {
           <input type="hidden" name="grp" value="` ~ htmlEscape(group) ~ `">
           <button type="submit">Send</button>
         </form>
-      `)
+      `, req.session ? req.session.get!string("user") : null)
     );
   });
 
@@ -109,6 +111,8 @@ void main() {
     db.sendMessage(req.form["grp"], req.session.get!string("user"), req.form["body"]);
     res.redirect("/chat/view", HTTPStatus.temporaryRedirect);
   });
+
+  router.get("/themes/default.css", &themes.defTheme);
 
   auto listener = listenHTTP(settings, router);
   scope (exit) listener.stopListening();

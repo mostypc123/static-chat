@@ -1,5 +1,6 @@
 module utils;
 import vibe.vibe;
+import database;
 
 void writeHtmlBody(HTTPServerResponse res, string html, int code = 200) {
   res.statusCode = code;
@@ -10,12 +11,14 @@ void writeHtmlBody(HTTPServerResponse res, string html, int code = 200) {
   );
 }
 
-string html(string body, string title = "Static Chat") {
+Database db;
+string html(string body, string user, string title = "Static Chat") {
   return (`
     <!doctype html>
     <html lang="en">
       <head>
         <title>` ~ title ~ `</title>
+        <link rel="stylesheet" href="` ~ (user is null ? "/themes/default.css" : db.getUsersTheme(user)) ~ `">
       </head>
       <body>`
         ~ body ~

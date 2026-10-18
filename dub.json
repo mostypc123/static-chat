@@ -10,5 +10,6 @@
 	],
 	"copyright": "Copyright © 2026, mostypc123",
 	"license": "MIT",
-	"name": "static-chat"
+	"name": "static-chat",
+	"stringImportPaths": ["themes"]
 }

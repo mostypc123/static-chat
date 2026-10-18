@@ -1,3 +1,5 @@
+module database;
+
 struct Message {
   string username;
   string body;
@@ -16,6 +18,7 @@ class Database {
       db.run(
         `CREATE TABLE IF NOT EXISTS users (
           username TEXT NOT NULL UNIQUE,
+          theme TEXT NOT NULL,
           pwd_hash TEXT NOT NULL
         )`
       );
@@ -51,11 +54,24 @@ class Database {
 
       // I have no clue what im doing
       db.execute(
-        "INSERT INTO users (username, pwd_hash) VALUES (?, ?)",
-        username, hash
+        "INSERT INTO users (username, pwd_hash, theme) VALUES (?, ?, ?)",
+        username, hash, "/themes/default.css"
       );
 
       return true;
+    }
+
+    string getUsersTheme(string username) {
+      auto rows = db.execute("SELECT theme FROM users WHERE username = ?", username);
+      if (rows.empty) return "/themes/default.css";
+
+      string stored = rows.front["theme"].as!string;
+      return stored;
+    }
+
+    bool setUsersTheme(string username, string theme) {
+      db.execute("UPDATE users SET theme = ? WHERE username = ?", theme, username);
+      return db.changes > 0;
     }
 
     bool checkLogin(string username, string pwd) {
