@@ -1,0 +1,14 @@
+{
+	"description": "A chat app that works with zero Javascript",
+	"dependencies": {
+		"vibe-d": "~>0.10.3",
+		"d2sqlite3": "~>1.0.0",
+		"arsd-official:argon2": "~>12.1.2"
+	},
+	"authors": [
+		"mostypc123"
+	],
+	"copyright": "Copyright © 2026, mostypc123",
+	"license": "MIT",
+	"name": "static-chat"
+}

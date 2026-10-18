@@ -1,0 +1,21 @@
+# dub
+.dub
+docs.json
+__dummy.html
+docs/
+/static-chat
+static-chat.so
+static-chat.dylib
+static-chat.dll
+libstatic-chat.a
+static-chat.a
+static-chat.lib
+static-chat-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+
+# database
+data.db
