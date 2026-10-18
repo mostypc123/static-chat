@@ -67,7 +67,20 @@ void main() {
     res.writeHtmlBody(
       html(`
         <h1>Welcome to Static Chat, <small>` ~ htmlEscape(user) ~ `</small>!</h1>
-        <form action="/chat/view" method="POST">
+        <details>
+          <summary>Settings</summary>
+          <details>
+            <summary>Appearance</summary>
+            <p>Theme:</p>
+            <form action="/settings/theme" method="POST">
+              <input placeholder="theme url" name="theme_url" value="` ~
+                (user is null ? "/themes/default.css" : db.getUsersTheme(user))
+               ~ `">
+              <button type="submit">Use</button>
+            </form>
+          </details>
+        </details>
+        <form class="bottom" action="/chat/view" method="POST">
           # <input autofocus name="grp" placeholder="group name">
           <button type="submit">Continue</button>
         </form>
@@ -98,7 +111,7 @@ void main() {
         <hr>
         ` ~ msg_list ~ `
         <hr>
-        <form action="/chat/send" method="POST">
+        <form class="bottom" action="/chat/send" method="POST">
           <input autofocus name="body" placeholder="message #` ~ group ~ `">
           <input type="hidden" name="grp" value="` ~ htmlEscape(group) ~ `">
           <button type="submit">Send</button>
@@ -112,7 +125,17 @@ void main() {
     res.redirect("/chat/view", HTTPStatus.temporaryRedirect);
   });
 
+  router.post("/settings/theme", (req, res) @trusted {
+    db.setUsersTheme(req.session.get!string("user"), req.form["theme_url"]);
+    res.writeHtmlBody(
+      html(`
+        <p>Your theme has been set. <a href="/welcome">Return home.</a></p>
+      `, req.session ? req.session.get!string("user") : null)
+    );
+  });
+
   router.get("/themes/default.css", &themes.defTheme);
+  router.get("/themes/light.css", &themes.lightTheme);
 
   auto listener = listenHTTP(settings, router);
   scope (exit) listener.stopListening();
