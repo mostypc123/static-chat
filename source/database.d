@@ -27,10 +27,17 @@ class Database {
 
       db.run(
         `CREATE TABLE IF NOT EXISTS groups (
-          id   INTEGER PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE
+          name TEXT NOT NULL UNIQUE,
+          id   INTEGER PRIMARY KEY
         )`
       );
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS tokens (
+          token_uuid TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL
+        )
+      `);
 
       db.run(`
         CREATE TABLE IF NOT EXISTS messages (
@@ -139,6 +146,45 @@ class Database {
       }
 
       return result;
+    }
+
+    string addToken(string user) {
+      import std.uuid;
+      auto id = randomUUID();
+      try {
+        db.execute("INSERT INTO tokens (name, token_uuid) VALUES (?, ?)", user, id.toString());
+        return id.toString();
+      } catch (sql.SqliteException e) {
+        return "";
+      }
+    }
+
+    string getTokenOwner(string token) {
+      try {
+        auto rows = db.execute("SELECT name FROM tokens WHERE token_uuid = ?", token);
+        if (rows.empty) return "";
+        return rows.front["name"].as!string;
+      } catch (sql.SqliteException e) {
+        return "";
+      }
+    }
+
+    bool removeToken(string token) {
+      try {
+        db.execute("DELETE FROM tokens WHERE token_uuid = ?", token);
+        return db.changes() > 0;
+      } catch (sql.SqliteException e) {
+        return false;
+      }
+    }
+
+    int removeUserTokens(string user) {
+      try {
+        db.execute("DELETE FROM tokens WHERE name = ?", user);
+        return db.changes();
+      } catch (sql.SqliteException e) {
+        return 0;
+      }
     }
   }
 

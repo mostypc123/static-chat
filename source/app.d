@@ -71,13 +71,38 @@ void main() {
           <summary>Settings</summary>
           <details>
             <summary>Appearance</summary>
-            <p>Theme:</p>
-            <form action="/settings/theme" method="POST">
-              <input placeholder="theme url" name="theme_url" value="` ~
-                (user is null ? "/themes/default.css" : db.getUsersTheme(user))
-               ~ `">
-              <button type="submit">Use</button>
-            </form>
+            <details>
+              <summary>Theme</summary>
+              <form action="/settings/theme" method="POST">
+                <input placeholder="theme url" name="theme_url" value="` ~
+                  (user is null ? "/themes/default.css" : db.getUsersTheme(user))
+                 ~ `">
+                <button type="submit">Use</button>
+              </form>
+            </details>
+          </details>
+          <details>
+            <summary>Authentication</summary>
+            <details>
+              <summary>Password</summary>
+              Forgot your password? Contact the admin:<br>
+              ` ~ config["contact"] ~ `
+            </details>
+            <details>
+              <summary>Auth token</summary>
+              <blockquote>
+                <b>IMPORTANT:</b> do not share your token to anyone unless you know what youre doing!<br>
+                Tokens are mainly used to create bots, as a normal user you probably wont need them.
+              </blockquote>
+              <form action="/settings/api/token/create" method="POST">
+                <button type="submit">Create a token</button>
+              </form>
+              <br>
+              <form action="/settings/api/token/delete" method="POST">
+                <input name="token" type="password" placeholder="token">
+                <button type="submit">Delete token</button>
+              </form>
+            </details>
           </details>
         </details>
         <form class="bottom" action="/chat/view" method="POST">
@@ -132,6 +157,54 @@ void main() {
         <p>Your theme has been set. <a href="/welcome">Return home.</a></p>
       `, req.session ? req.session.get!string("user") : null)
     );
+  });
+
+  router.post("/settings/api/token/create", (req, res) @trusted {
+    auto user = req.session.get!string("user");
+    string token = db.addToken(user);
+
+    if (token != "") {
+      res.writeHtmlBody(
+        html(`
+          <p>Your token has been created: <code>` ~ token ~ `</code>. <a href="/welcome">Return home.</a></p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+    } else {
+      res.writeHtmlBody(
+        html(`
+          <p>Your token has not been created successfully. <a href="/welcome">Return home.</a></p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+    }
+  });
+
+  router.post("/settings/api/token/delete", (req, res) @trusted {
+    auto user = req.session.get!string("user");
+    auto token = req.form["token"];
+
+    if (db.getTokenOwner(token) != user) {
+      res.writeHtmlBody(
+        html(`
+          <p>Your token has not been deleted successfully because you dont own it.
+            <a href="/welcome">Return home.</a></p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+      return;
+    }
+
+    if (db.removeToken(token)) {
+      res.writeHtmlBody(
+        html(`
+          <p>Your token has been deleted: <code>` ~ token ~ `</code>. <a href="/welcome">Return home.</a></p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+    } else {
+      res.writeHtmlBody(
+        html(`
+          <p>Your token has not been deleted successfully. <a href="/welcome">Return home.</a></p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+    }
   });
 
   router.get("/themes/default.css", &themes.defTheme);

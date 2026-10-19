@@ -4,6 +4,10 @@
   --line: #444;
 }
 
+details details {
+  margin-left: 1.25rem;
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
