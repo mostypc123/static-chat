@@ -39,8 +39,18 @@ void main() {
   });
 
   router.post("/register", (req, res) @trusted {
-    auto username = req.form["user"];
-    auto password = req.form["password"]; // will be hashed by addUser
+    string username;
+    string password;
+    try {
+      username = req.form["user"];
+      password = req.form["password"]; // will be hashed by addUser
+    } catch (Exception e) {
+      res.writeHtmlBody(
+        html(`
+          <p>did not provide data to form.</p>
+        `, req.session ? req.session.get!string("user") : null)
+      );
+    }
 
     bool ok = db.addUser(username, password);
     if (ok) {
@@ -148,6 +158,54 @@ void main() {
   router.post("/chat/send", (req, res) @trusted {
     db.sendMessage(req.form["grp"], req.session.get!string("user"), req.form["body"]);
     res.redirect("/chat/view", HTTPStatus.temporaryRedirect);
+  });
+
+  router.post("/api/chat/send", (req, res) @trusted {
+    auto json = req.json;
+
+    string apikey;
+    string body;
+    string grp;
+
+    try {
+      apikey = json["token"].get!string;
+      body = json["body"].get!string;
+      grp = json["grp"].get!string;
+    } catch (Exception e) {
+      res.writeJsonBody([
+        "ok": "false",
+        "message": "no token / body / grp"
+      ]);
+      return;
+    }
+
+    auto user = db.getTokenOwner(apikey);
+
+    if (user == "") {
+      res.writeJsonBody([
+        "ok": "false",
+        "message": "invalid token"
+      ]);
+      return;
+    }
+
+    if (!db.groupExists(grp)) {
+      res.writeJsonBody([
+        "ok": "false",
+        "message": "no such grp"
+      ]);
+      return;
+    }
+
+    if (!db.sendMessage(grp, user, body)) {
+      res.writeJsonBody([
+        "ok": "false",
+        "message": "insert msg fail"
+      ]);
+      return;
+    }
+
+    res.writeJsonBody(["ok": "true"]);
   });
 
   router.post("/settings/theme", (req, res) @trusted {
