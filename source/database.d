@@ -14,6 +14,7 @@ class Database {
   public {
     this(Config conf) {
       db = sql.Database(conf["db_file"]);
+      bots = new b.Bots("bots");
 
       db.run(
         `CREATE TABLE IF NOT EXISTS users (
@@ -113,10 +114,25 @@ class Database {
     }
 
     bool sendMessage(string group, string username, string body) {
+      import std.algorithm : startsWith, findSplit;
+
+      string nbody;
+      if (body.startsWith("/bot ")) {
+        // "/bot name some args" -> ["name", " ", "some args"]
+        auto parts = body[5 .. $].findSplit(" ");
+        try {
+          nbody = bots[parts[0]].call(parts[2]);
+        } catch (Exception e) {
+          nbody = "failed bot call.";
+        }
+      } else {
+        nbody = body;
+      }
+
       db.execute(
         `INSERT INTO messages (group_id, username, body)
          SELECT id, ?, ? FROM groups WHERE name = ?`,
-        username, body, group
+        username, nbody, group
       );
 
       return db.changes > 0;
@@ -190,5 +206,8 @@ class Database {
 
   private {
     sql.Database db;
+
+    import b = bots;
+    b.Bots bots;
   }
 }

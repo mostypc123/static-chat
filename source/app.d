@@ -50,6 +50,7 @@ void main() {
           <p>did not provide data to form.</p>
         `, req.session ? req.session.get!string("user") : null)
       );
+      return;
     }
 
     bool ok = db.addUser(username, password);
@@ -85,7 +86,7 @@ void main() {
               <summary>Theme</summary>
               <form action="/settings/theme" method="POST">
                 <input placeholder="theme url" name="theme_url" value="` ~
-                  (user is null ? "/themes/default.css" : db.getUsersTheme(user))
+                  htmlEscape(db.getUsersTheme(user))
                  ~ `">
                 <button type="submit">Use</button>
               </form>
@@ -126,10 +127,19 @@ void main() {
   router.post("/chat/view", (req, res) @trusted {
     import std.conv : to;
 
-    auto group = htmlEscape(req.form["grp"]);
+    if (!req.session) {
+      res.redirect("/");
+      return;
+    }
 
-    auto show = (db.groupExists(group) ? "" : htmlEscape("<NEW GROUP>")) ~ "# <b>" ~ group ~ "</b>";
-    auto user = req.session.get!string("user");
+    // keep the raw name for the DB, escape only when rendering
+    auto group = req.form["grp"];
+    if (group.length == 0) {
+      res.redirect("/welcome");
+      return;
+    }
+
+    auto show = (db.groupExists(group) ? "" : htmlEscape("<NEW GROUP>")) ~ "# <b>" ~ htmlEscape(group) ~ "</b>";
 
     // create if doesnt exist
     db.addGroup(group);
@@ -147,7 +157,7 @@ void main() {
         ` ~ msg_list ~ `
         <hr>
         <form class="bottom" action="/chat/send" method="POST">
-          <input autofocus name="body" placeholder="message #` ~ group ~ `">
+          <input autofocus name="body" placeholder="message #` ~ htmlEscape(group) ~ `">
           <input type="hidden" name="grp" value="` ~ htmlEscape(group) ~ `">
           <button type="submit">Send</button>
         </form>
@@ -156,6 +166,10 @@ void main() {
   });
 
   router.post("/chat/send", (req, res) @trusted {
+    if (!req.session) {
+      res.redirect("/");
+      return;
+    }
     db.sendMessage(req.form["grp"], req.session.get!string("user"), req.form["body"]);
     res.redirect("/chat/view", HTTPStatus.temporaryRedirect);
   });
@@ -209,6 +223,10 @@ void main() {
   });
 
   router.post("/settings/theme", (req, res) @trusted {
+    if (!req.session) {
+      res.redirect("/");
+      return;
+    }
     db.setUsersTheme(req.session.get!string("user"), req.form["theme_url"]);
     res.writeHtmlBody(
       html(`
@@ -218,6 +236,10 @@ void main() {
   });
 
   router.post("/settings/api/token/create", (req, res) @trusted {
+    if (!req.session) {
+      res.redirect("/");
+      return;
+    }
     auto user = req.session.get!string("user");
     string token = db.addToken(user);
 
@@ -237,6 +259,10 @@ void main() {
   });
 
   router.post("/settings/api/token/delete", (req, res) @trusted {
+    if (!req.session) {
+      res.redirect("/");
+      return;
+    }
     auto user = req.session.get!string("user");
     auto token = req.form["token"];
 
