@@ -21,7 +21,15 @@ class Config {
         continue;
       }
 
-      options[line[0 .. eq].strip()] = line[eq + 1 .. $].strip();
+      auto key = line[0 .. eq].strip();
+      auto value = line[eq + 1 .. $].strip();
+
+      if (key.startsWith("env+")) {
+        import std.process : environment;
+        environment[key[4 .. $]] = value;
+      } else {
+        options[key] = value;
+      }
     }
   }
 
